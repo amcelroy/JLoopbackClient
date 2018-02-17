@@ -20,26 +20,26 @@ public class LoopbackClient {
 		m_Port = port;
 	}
 
-	public String sendRequest(String request) throws UnknownHostException, IOException, InterruptedException{
+	public String sendRequest(String request, String termSequence) throws UnknownHostException, IOException, InterruptedException{
 		Socket s = new Socket(m_IP, m_Port);
 		
 		s.getOutputStream().write(request.getBytes());
 		
-		InputStreamReader br = new InputStreamReader(s.getInputStream());
+		BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
 		
 		String json = "";
 		
 		boolean stop = false;
 		
 		while(stop == false){
-			char[] buff = new char[8192];
+			char[] buff = new char[32768];
 			int read = br.read(buff, 0, buff.length);
 			if(read == -1){
 				break;
 			}
 			String b = new String(buff);
-			if(b.contains("***ENDJSON***")){
-				int lastOf = b.lastIndexOf("***ENDJSON***");
+			if(b.contains(termSequence)){
+				int lastOf = b.lastIndexOf(termSequence);
 				b = b.substring(0, lastOf);
 				stop = true;
 			}
@@ -59,17 +59,19 @@ public class LoopbackClient {
 		return json;
 	}
 	
-	public void parse(String response) throws ParseException{
-		JSONParser p = new JSONParser();
-		Object o = p.parse(response);
-		
-		JSONObject a = (JSONObject)o;
-		
-		if(a.containsKey("frame")){
-			String width = (String) a.get("width");
-			String height = (String) a.get("height");
-			String data = (String) a.get("data");
-		}		
+	public void parse(String response) {
+		throw new UnsupportedOperationException("Function not implimented");
+//		if(response.substring(0, 10).contains("frame:")){
+//			response = response.substring(6);
+//		}else{
+//			JSONParser p = new JSONParser();
+//			Object o = p.parse(response);
+//			
+//			JSONObject a = (JSONObject)o;
+//
+//		}
+//		
+	
 	}
 	
 	/**
@@ -81,7 +83,7 @@ public class LoopbackClient {
 		
 		String req = c.formatJSON("frame", "");
 		try {
-			String response = c.sendRequest(req);
+			String response = c.sendRequest(req, "</transmission>");
 			
 			c.parse(response);
 			
@@ -89,9 +91,6 @@ public class LoopbackClient {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InterruptedException e) {
