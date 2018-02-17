@@ -1,10 +1,10 @@
 import java.io.BufferedReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -20,23 +20,30 @@ public class LoopbackClient {
 		m_Port = port;
 	}
 
-	public String sendRequest(String request) throws UnknownHostException, IOException{
+	public String sendRequest(String request) throws UnknownHostException, IOException, InterruptedException{
 		Socket s = new Socket(m_IP, m_Port);
 		
 		s.getOutputStream().write(request.getBytes());
 		
-		BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
+		InputStreamReader br = new InputStreamReader(s.getInputStream());
 		
 		String json = "";
 		
 		boolean stop = false;
 		
 		while(stop == false){
-			String b = br.readLine();
-			json += b;
-			if(b.contains("}")){
+			char[] buff = new char[8192];
+			int read = br.read(buff, 0, buff.length);
+			if(read == -1){
+				break;
+			}
+			String b = new String(buff);
+			if(b.contains("***ENDJSON***")){
+				int lastOf = b.lastIndexOf("***ENDJSON***");
+				b = b.substring(0, lastOf);
 				stop = true;
 			}
+			json += b;
 		}
 		
 		s.close();
@@ -59,7 +66,9 @@ public class LoopbackClient {
 		JSONObject a = (JSONObject)o;
 		
 		if(a.containsKey("frame")){
-			
+			String width = (String) a.get("width");
+			String height = (String) a.get("height");
+			String data = (String) a.get("data");
 		}		
 	}
 	
@@ -83,6 +92,9 @@ public class LoopbackClient {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
